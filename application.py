@@ -1,15 +1,26 @@
 import os
+from threading import Thread
 
 from flask import Flask, request, render_template,jsonify
 from flask_cors import CORS,cross_origin
 from src.pipeline.model_comparison import get_model_comparison_metrics
 from src.pipeline.predict_pipeline import CustomData, PredictPipeline
 from src.pipeline.retrain_pipeline import retrain_from_db
+from src.database.db_config import init_db
 from src.database.services import DashboardService, PredictionService
 
 application = Flask(__name__)
 
 app = application
+
+def _init_db_async():
+    try:
+        init_db()
+    except Exception as init_error:
+        app.logger.exception("Database init failed: %s", init_error)
+
+
+Thread(target=_init_db_async, daemon=True).start()
 
 allowed_origins_env = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
 allowed_origins = [origin.strip() for origin in allowed_origins_env.split(',') if origin.strip()]
